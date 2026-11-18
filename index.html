@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Penilaian Diri – Trigonometri</title>
+<style>
+:root{
+  --bg:#FFFFFF; --surface:#F6F7FD; --ink:#14183A; --muted:#566086; --line:#DDE2F3;
+  --a:#3446D2; --a-soft:#E5E9FF; --on-a:#FFFFFF; --y:#F5B800;
+  --good:#12805F; --good-soft:#DDF4EC; --bad:#C0392B; --bad-soft:#FCE6E3;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0D1130;--surface:#161C40;--ink:#E9ECFF;--muted:#9BA5D1;--line:#272F5C;
+        --a:#8C9BFF;--a-soft:#232C5E;--on-a:#0D1130;
+        --good:#4CD2AE;--good-soft:#12392F;--bad:#FF8A7A;--bad-soft:#3E1E24;color-scheme:dark;}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.55 "Figtree","Segoe UI",system-ui,sans-serif;padding:12px}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+h3{margin:0;font:800 20px/1.2 "Bricolage Grotesque","Trebuchet MS",sans-serif}
+.hint{margin:0;color:var(--muted);font-size:15px}
+.scale{display:flex;flex-wrap:wrap;gap:6px 14px;font:500 12.5px ui-monospace,Menlo,monospace;color:var(--muted)}
+.scale b{color:var(--ink)}
+.item{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-bottom:1px solid var(--line)}
+.item.miss .stmt{color:var(--bad)}
+.stmt{font-weight:600}
+.stmt small{display:block;font:500 11px ui-monospace,Menlo,monospace;color:var(--a);letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.seg button{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 2px;font-weight:600;font-size:14px;line-height:1.25}
+.seg button span{display:block;font-weight:500;font-size:11.5px;line-height:1.2;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--a);color:var(--on-a);border-color:var(--a)}
+.seg button[aria-pressed="true"] span{color:var(--on-a)}
+.seg button:focus-visible{outline:3px solid var(--y);outline-offset:2px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{background:var(--a);color:var(--on-a);border:0;border-radius:12px;padding:12px 20px;font-weight:700;font-size:15px}
+.btn.ghost{background:transparent;color:var(--a);border:1.5px solid var(--a)}
+.cnt{font:500 13px ui-monospace,Menlo,monospace;color:var(--muted)}
+.fb{border-radius:12px;padding:12px 14px;font-size:15px}
+.fb:empty{display:none}
+.fb.ok{background:var(--good-soft)} .fb.ok b{color:var(--good)}
+.fb.no{background:var(--bad-soft)} .fb.no b{color:var(--bad)}
+.fb.wait{background:var(--surface);color:var(--muted)}
+.fb ul{margin:6px 0 0;padding-left:20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h3>Penilaian diri</h3>
+  <p class="hint">Pilih seberapa yakin kamu pada tiap pernyataan. Jujur saja, tidak ada nilai.</p>
+  <div class="scale"><span><b>1</b> Belum bisa</span><span><b>2</b> Mulai bisa</span><span><b>3</b> Cukup bisa</span><span><b>4</b> Sangat bisa</span></div>
+
+  <div id="list"></div>
+
+  <div class="row">
+    <button class="btn" id="go" type="button">Lihat hasil</button>
+    <button class="btn ghost" id="reset" type="button">Ulangi</button>
+    <span class="cnt" id="cnt" aria-live="polite"></span>
+  </div>
+  <div class="fb" id="fb" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+(function(){
+  var items=[
+    ['Saya bisa menentukan sin, cos, dan tan dari sisi segitiga siku-siku.','Bab 1','Perbandingan trigonometri'],
+    ['Saya hafal nilai perbandingan sudut istimewa.','Bab 2','Sudut istimewa'],
+    ['Saya bisa menentukan tanda perbandingan di tiap kuadran.','Bab 3','Kuadran'],
+    ['Saya bisa memakai rumus sudut berelasi.','Bab 4','Rumus sudut berelasi'],
+    ['Saya bisa menyelesaikan soal tinggi dan jarak dengan sudut elevasi.','Bab 5','Trigonometri di sekitar kita (elevasi dan depresi)']
+  ];
+  var lab=['Belum bisa','Mulai bisa','Cukup bisa','Sangat bisa'], val=[];
+  var $=function(i){return document.getElementById(i)};
+  var list=$('list');
+
+  items.forEach(function(it,i){
+    var row=document.createElement('div'); row.className='item';
+    var st=document.createElement('div'); st.className='stmt';
+    var sm=document.createElement('small'); sm.textContent=it[1]; st.appendChild(sm);
+    st.appendChild(document.createTextNode(it[0]));
+    var seg=document.createElement('div'); seg.className='seg';
+    for(var k=1;k<=4;k++)(function(k){
+      var b=document.createElement('button'); b.type='button'; b.setAttribute('aria-pressed','false');
+      b.setAttribute('aria-label',it[1]+': '+k+', '+lab[k-1]);
+      b.innerHTML=k+'<span>'+lab[k-1]+'</span>';
+      b.addEventListener('click',function(){
+        val[i]=k; row.classList.remove('miss');
+        Array.prototype.forEach.call(seg.children,function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});
+        count();
+      });
+      seg.appendChild(b);
+    })(k);
+    row.appendChild(st); row.appendChild(seg); list.appendChild(row);
+  });
+
+  function count(){
+    var n=items.filter(function(_,i){return val[i]}).length;
+    $('cnt').textContent=n+' dari '+items.length+' terjawab';
+  }
+
+  $('go').addEventListener('click',function(){
+    var fb=$('fb'), rows=list.children, missing=false;
+    items.forEach(function(_,i){ var m=!val[i]; if(m) missing=true; rows[i].classList.toggle('miss',m); });
+    if(missing){ fb.className='fb wait'; fb.textContent='Jawab kelima pernyataan dulu ya.'; return; }
+    var low=items.filter(function(_,i){return val[i]<=2});
+    if(low.length){
+      fb.className='fb no';
+      fb.innerHTML='<b>Perlu diulang:</b><ul>'+low.map(function(it){return '<li>'+it[1]+' – '+it[2]+'</li>'}).join('')+'</ul>';
+    }else{
+      fb.className='fb ok';
+      fb.innerHTML='<b>Mantap.</b> Semua bagian sudah kamu rasa cukup dikuasai. Coba latihan TKA sekali lagi untuk memastikan.';
+    }
+  });
+
+  $('reset').addEventListener('click',function(){
+    val=[]; $('fb').className='fb'; $('fb').textContent='';
+    Array.prototype.forEach.call(list.children,function(r){
+      r.classList.remove('miss');
+      Array.prototype.forEach.call(r.querySelectorAll('button'),function(b){b.setAttribute('aria-pressed','false')});
+    });
+    count();
+  });
+  count();
+})();
+</script>
+</body>
+</html>
